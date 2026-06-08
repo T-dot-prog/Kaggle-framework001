@@ -1,21 +1,18 @@
 import os
 
-API_KEY_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "api_key.txt")
+txt_api_path = os.path.join(os.path.dirname(__file__), "api_key.txt")
 
-def _load_config():
-    key = os.environ.get("GROQ_API_KEY")
-    base_url = os.environ.get("GROQ_BASE_URL", "https://api.groq.com/openai/v1")
-    if key:
+def _load_config() -> tuple[any, any]:
+    if not os.path.exists(txt_api_path):
+        print("Configure api key and base url")
+        return None, None
+    else:
+        with open(txt_api_path, "r") as f:
+            content = f.readlines()
+            key = content[0].strip()
+            base_url = content[1].strip()
+
         return key, base_url
-    if os.path.exists(API_KEY_PATH):
-        with open(API_KEY_PATH) as f:
-            for line in f:
-                line = line.strip()
-                if line.startswith("api_key") and "=" in line:
-                    key = line.split("=", 1)[1].strip().strip('"').strip("'")
-                elif line.startswith("base_url") and "=" in line:
-                    base_url = line.split("=", 1)[1].strip().strip('"').strip("'")
-    return key, base_url
 
 GROQ_API_KEY, GROQ_BASE_URL = _load_config()
 
@@ -37,5 +34,5 @@ TEMPERATURES = {
 
 
 def get_groq_client():
-    from openai import OpenAI
-    return OpenAI(api_key=GROQ_API_KEY, base_url=GROQ_BASE_URL)
+    from groq import Groq
+    return Groq(api_key=GROQ_API_KEY, base_url=GROQ_BASE_URL)
