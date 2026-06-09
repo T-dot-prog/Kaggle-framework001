@@ -1,5 +1,5 @@
 import os
-import pickle
+import json
 
 import pandas as pd
 
@@ -54,17 +54,17 @@ class State:
 
     def save_checkpoint(self, phase_name):
         self.ensure_checkpoint_dir()
-        path = os.path.join(os.getcwd(), "checkpoints", f"{phase_name}.pkl")
-        with open(path, "wb") as f:
-            pickle.dump(self.to_dict(), f)
+        path = os.path.join(os.getcwd(), "checkpoints", f"{phase_name}.json")
+        with open(path, "w") as f:
+            json.dump(self.to_dict(), f)
         print(f"Checkpoint saved: {path}")
 
     @classmethod
     def load_checkpoint(cls, phase_name):
-        path = os.path.join(os.getcwd(), "checkpoints", f"{phase_name}.pkl")
+        path = os.path.join(os.getcwd(), "checkpoints", f"{phase_name}.json")
         if os.path.exists(path):
-            with open(path, "rb") as f:
-                data = pickle.load(f)
+            with open(path, "r") as f:
+                data = json.load(f)
             return cls.from_dict(data)
         return None
 
