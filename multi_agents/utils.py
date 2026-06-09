@@ -35,6 +35,12 @@ def ensure_directories():
         os.makedirs(d, exist_ok=True)
 
 
+def ensure_kb_directory():
+    path = os.path.join(os.getcwd(), "kb")
+    os.makedirs(path, exist_ok=True)
+    return path
+
+
 def setup_logger(name):
     logger = logging.getLogger(name)
     logger.setLevel(logging.INFO)
@@ -64,7 +70,10 @@ def groq_chat(messages, model=None, temperature=0.2, tools=None):
     if model is None:
         model = MODEL_MAPPINGS["planner_model"]
 
-    client = Groq(api_key=GROQ_API_KEY, base_url=GROQ_BASE_URL)
+    base_url = GROQ_BASE_URL.rstrip("/")
+    if base_url.endswith("/openai/v1"):
+        base_url = base_url[: -len("/openai/v1")]
+    client = Groq(api_key=GROQ_API_KEY, base_url=base_url)
 
     kwargs = {
         "model": model,
