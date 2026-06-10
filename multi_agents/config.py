@@ -1,11 +1,18 @@
+from __future__ import annotations
+
 import os
+from typing import Any
 
 txt_api_path = os.path.join(os.path.dirname(__file__), "api_key.txt")
 
-def _load_config() -> tuple[any, any]:
+
+def _load_config() -> tuple[Any, Any]:
     if not os.path.exists(txt_api_path):
         print("Configure api key and base url")
-        return None, None
+        return (
+            None,
+            None,
+        )
     else:
         with open(txt_api_path, "r") as f:
             content = f.readlines()
@@ -13,6 +20,7 @@ def _load_config() -> tuple[any, any]:
             base_url = content[1].strip()
 
         return key, base_url
+
 
 GROQ_API_KEY, GROQ_BASE_URL = _load_config()
 
@@ -35,4 +43,5 @@ TEMPERATURES = {
 
 def get_groq_client():
     from groq import Groq
+
     return Groq(api_key=GROQ_API_KEY, base_url=GROQ_BASE_URL)

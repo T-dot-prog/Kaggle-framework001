@@ -2,9 +2,9 @@ import json
 import logging
 import traceback
 
-from config import MODEL_MAPPINGS, TEMPERATURES
-from tool_registry import get_best_tools_for_task, register_tool, list_all_tools
-from utils import groq_chat
+from multi_agents.config import MODEL_MAPPINGS, TEMPERATURES
+from multi_agents.tool_registry import get_best_tools_for_task, register_tool, list_all_tools
+from multi_agents.utils import groq_chat
 
 from multi_agents.state import State
 
@@ -144,12 +144,19 @@ class PlannerAgent:
             )
 
             parsed = self._parse_json(raw)
-            if parsed and parsed.get("plan"):
-                state.execution_plan = parsed["plan"]
+            if isinstance(parsed, dict):
+                revised_plan = parsed.get("plan")
+            elif isinstance(parsed, list):
+                revised_plan = parsed
+            else:
+                revised_plan = None
+
+            if revised_plan:
+                state.execution_plan = revised_plan
                 state.decision_memory.append({
                     "agent": "PlannerAgent",
                     "action": "revised plan after failure",
-                    "detail": {"failed_phase": failed_phase, "revised_plan": parsed["plan"]},
+                    "detail": {"failed_phase": failed_phase, "revised_plan": revised_plan},
                 })
 
         except Exception as e:

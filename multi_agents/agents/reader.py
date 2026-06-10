@@ -5,8 +5,8 @@ import traceback
 
 import pandas as pd
 
-from config import MODEL_MAPPINGS, TEMPERATURES
-from utils import groq_chat
+from multi_agents.config import MODEL_MAPPINGS, TEMPERATURES
+from multi_agents.utils import groq_chat
 
 from multi_agents.state import State
 

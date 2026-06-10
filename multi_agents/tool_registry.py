@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 KB_DIR = os.path.join(os.getcwd(), "kb")
 REGISTRY_PATH = os.path.join(KB_DIR, "tool_success_rates.json")
 
-_registry = None
+_registry = {}
 
 
 def _load_registry():
@@ -21,8 +21,9 @@ def _load_registry():
     if os.path.exists(REGISTRY_PATH):
         try:
             with open(REGISTRY_PATH) as f:
-                _registry = json.load(f)
-        except (json.JSONDecodeError, OSError):
+                data = json.load(f)
+            _registry = data if isinstance(data, dict) else {}
+        except json.JSONDecodeError:
             _registry = {}
     else:
         _registry = {}
@@ -74,7 +75,7 @@ def record_outcome(name, success):
     _save_registry()
 
 
-def get_best_tools_for_task(task_description: str, top_n:int =3):
+def get_best_tools_for_task(task_description: str, top_n: int = 3):
     if _registry is None:
         _load_registry()
     if not _registry:
@@ -111,3 +112,24 @@ def list_all_tools():
 
 
 _load_registry()
+
+_FALLBACK_TOOLS = [
+    ("handle_missing_values", ["missing_values", "imputation", "data_cleaning"]),
+    ("detect_outliers", ["outliers", "anomaly_detection", "data_cleaning"]),
+    ("scale_features", ["scaling", "normalization", "feature_engineering"]),
+    ("encode_categorical", ["encoding", "categorical", "feature_engineering"]),
+    (
+        "create_polynomial_features",
+        ["polynomial", "feature_interaction", "feature_engineering"],
+    ),
+    (
+        "select_features_by_variance",
+        ["variance_threshold", "feature_selection", "feature_engineering"],
+    ),
+    ("split_data", ["train_test_split", "data_splitting", "modeling"]),
+    ("train_model", ["training", "model_fitting", "modeling"]),
+    ("evaluate_model", ["evaluation", "metrics", "modeling"]),
+]
+for name, tags in _FALLBACK_TOOLS:
+    if name not in _registry:
+        register_tool(name, tags)

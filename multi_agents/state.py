@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import json
+import time
 
 import pandas as pd
 
@@ -22,6 +23,9 @@ class State:
         self.execution_plan = []
         self.generated_code = {}
         self.error_logs = []
+        self.skipped_phases = []
+        self.df_train: pd.DataFrame | None = None
+        self._current_train_csv: str | None = None
 
     @property
     def train_csv(self):
@@ -39,6 +43,35 @@ class State:
     def overview_txt(self):
         return os.path.join(self.competition_path, "overview.txt")
 
+    @property
+    def comp_dir(self):
+        return self.competition_path
+
+    def add_code_attempt(self, code_snippet, error_if_any, success, feedback, phase=""):
+        self.code_attempts.append({
+            "code": code_snippet,
+            "error": error_if_any,
+            "success": success,
+            "feedback": feedback,
+            "phase": phase,
+            "timestamp": time.time(),
+        })
+
+    def get_code_attempts(self, phase):
+        return [a for a in self.code_attempts if a.get("phase") == phase]
+
+    def append_error_log(self, error):
+        if isinstance(error, str):
+            self.error_logs.append({"error": error, "timestamp": time.time()})
+        elif isinstance(error, dict):
+            self.error_logs.append(error)
+
+    def load_train_df(self):
+        """Load train.csv into self.df_train if not loaded."""
+        if self.df_train is None:
+            self.df_train = pd.read_csv(self.train_csv)
+        return self.df_train
+
     def get_train_df(self, num_rows=None):
         try:
             df = pd.read_csv(self.train_csv)
@@ -48,6 +81,15 @@ class State:
         except FileNotFoundError:
             print(f"Warning: train.csv not found at {self.train_csv}")
             return None
+
+    @property
+    def current_train_csv(self):
+        if self._current_train_csv and os.path.exists(self._current_train_csv):
+            return self._current_train_csv
+        return self.train_csv
+
+    def set_current_train_csv(self, path):
+        self._current_train_csv = path
 
     def ensure_checkpoint_dir(self):
         path = os.path.join(os.getcwd(), "checkpoints")
@@ -71,7 +113,7 @@ class State:
         return None
 
     def to_dict(self):
-        return {
+        d = {
             "phase": self.phase,
             "competition_path": self.competition_path,
             "output_dir": self.output_dir,
@@ -81,7 +123,10 @@ class State:
             "execution_plan": self.execution_plan,
             "generated_code": self.generated_code,
             "error_logs": self.error_logs,
+            "skipped_phases": self.skipped_phases,
         }
+        d.pop("df_train", None)
+        return d
 
     @classmethod
     def from_dict(cls, data):
@@ -96,4 +141,7 @@ class State:
         state.execution_plan = data.get("execution_plan", [])
         state.generated_code = data.get("generated_code", {})
         state.error_logs = data.get("error_logs", [])
+        state.skipped_phases = data.get("skipped_phases", [])
+        state.df_train = None
+        state._current_train_csv = None
         return state

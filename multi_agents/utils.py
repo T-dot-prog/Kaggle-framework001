@@ -1,4 +1,6 @@
+import json
 import os
+import re
 import time
 import logging
 from groq import Groq
@@ -30,6 +32,8 @@ def ensure_directories():
         os.path.join(root, "multi_agents", "experiments_history"),
         os.path.join(root, "checkpoints"),
         os.path.join(root, "logs"),
+        os.path.join(root, "generated_code"),
+        os.path.join(root, "artifacts"),
     ]
     for d in dirs:
         os.makedirs(d, exist_ok=True)
@@ -66,7 +70,30 @@ def setup_logger(name):
     return logger
 
 
-def groq_chat(messages, model=None, temperature=0.2, tools=None):
+def parse_json_response(raw):
+    if not raw:
+        return None
+    cleaned = raw.strip()
+    if cleaned.startswith("```"):
+        cleaned = cleaned.split("\n", 1)[-1]
+        if "```" in cleaned:
+            cleaned = cleaned.rsplit("```", 1)[0]
+    cleaned = cleaned.strip()
+    try:
+        return json.loads(cleaned)
+    except json.JSONDecodeError:
+        pass
+    try:
+        import re
+        match = re.search(r"\{.*\}", cleaned, re.DOTALL)
+        if match:
+            return json.loads(match.group())
+    except json.JSONDecodeError:
+        pass
+    return None
+
+
+def groq_chat(messages, model=None, temperature=0.2, tools=None, max_tokens=None, response_format=None):
     if model is None:
         model = MODEL_MAPPINGS["planner_model"]
 
@@ -82,6 +109,10 @@ def groq_chat(messages, model=None, temperature=0.2, tools=None):
     }
     if tools:
         kwargs["tools"] = tools
+    if max_tokens:
+        kwargs["max_tokens"] = max_tokens
+    if response_format:
+        kwargs["response_format"] = response_format
 
     last_exception = None
     for attempt in range(3):

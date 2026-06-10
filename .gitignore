@@ -12,5 +12,5 @@ wheels/
 # Project-specific
 checkpoints/
 logs/
-./multi_agents/api_key.txt
-*.pkl
+multi_agents/api_key.txt
+*.json
